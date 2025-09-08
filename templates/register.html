@@ -1,6 +1,15 @@
-<form method="POST">
-    <input name="username" placeholder="Usuario" required>
-    <input name="password" type="password" placeholder="Contraseña" required>
-    <button type="submit">Registrarse</button>
-  </form>
-  
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Registro</title>
+</head>
+<body>
+    <h1>Registro de usuario</h1>
+    <form method="POST">
+        Usuario: <input type="text" name="username"><br>
+        Contraseña: <input type="password" name="password"><br>
+        <button type="submit">Registrar</button>
+    </form>
+    <a href="{{ url_for('login') }}">Iniciar sesión</a>
+</body>
+</html>
