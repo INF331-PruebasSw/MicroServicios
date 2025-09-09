@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="welcome-container">
+        <h1>Bienvenido a la Gestión de Eventos</h1>
+        
+        <div class="auth-options">
+            <p>Por favor, inicia sesión para acceder a tus eventos o regístrate si eres nuevo.</p>
+            <a href="{{ url_for('login') }}" class="button primary">Iniciar Sesión</a>
+            <a href="{{ url_for('register') }}" class="button secondary">Registrarse</a>
+        </div>
+    </div>
+{% endblock %}

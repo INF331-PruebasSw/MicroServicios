@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Reportes del Sistema</h2>
+
+    <div class="report-summary">
+        <div class="report-card">
+            <h3>Total de Eventos Registrados</h3>
+            <p class="metric">{{ total_events }}</p>
+        </div>
+        <div class="report-card">
+            <h3>Cupos Disponibles Totales</h3>
+            <p class="metric">{{ total_available_slots }}</p>
+        </div>
+        <div class="report-card">
+            <h3>Eventos Agotados</h3>
+            <p class="metric">{{ sold_out_events }}</p>
+        </div>
+    </div>
+
+    <hr>
+
+    <h3>Próximos Eventos (Top 5)</h3>
+    {% if upcoming_events %}
+        <ul class="upcoming-list">
+            {% for event in upcoming_events %}
+                <li>
+                    <a href="{{ url_for('event_detail', event_id=event.id) }}">{{ event.name }}</a>
+                    - {{ event.date.strftime('%d/%m/%Y %H:%M') }}
+                    - Cupos: {{ event.available_slots }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No hay eventos próximos.</p>
+    {% endif %}
+
+    <hr>
+
+    <h3>Eventos Recientemente Agotados (Top 5)</h3>
+    {% if recently_sold_out %}
+        <ul class="sold-out-list">
+            {% for event in recently_sold_out %}
+                <li>
+                    <a href="{{ url_for('event_detail', event_id=event.id) }}">{{ event.name }}</a>
+                    - {{ event.date.strftime('%d/%m/%Y %H:%M') }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No hay eventos recientemente agotados.</p>
+    {% endif %}
+
+{% endblock %}

@@ -1,94 +1,88 @@
-from flask import render_template, request, redirect, url_for, flash
-from flask_login import login_user, logout_user, login_required, current_user
-from app import app, db
-from models import User, Event
+# routes.py
 
-# Ruta de inicio de sesión
+from flask import render_template, redirect, url_for, flash, request
+from flask_login import login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+from app import app, db, login_manager # Importa app, db, login_manager desde app.py
+from models import User, Event # Importa tus modelos
+import datetime
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+@app.route('/')
+@login_required
+def home():
+    events = Event.query.all()
+    return render_template('home.html', events=events)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        user = User.query.filter_by(username=username).first()
-        if user and user.check_password(password):
-            login_user(user)
-            return redirect(url_for('dashboard'))
+        email = request.form['email']
+        pswd = request.form['password']
+        user = User.query.filter_by(email=email).first()
+        if user and user.check_password(pswd):
+            return f"Bienvenido {user.username}!"
         else:
-            flash('Usuario o contraseña incorrectos.', 'danger')
+            return "Email o contraseña incorrectos"
     return render_template('login.html')
 
-# Ruta para cerrar sesión
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists', 'danger')
+            return redirect(url_for('register'))
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered', 'danger')
+            return redirect(url_for('register'))
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256', salt_length=8)
+        new_user = User(username=username, email=email, password_hash=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+        flash('Account created successfully! Please log in.', 'success')
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
+    flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
 
-# Dashboard (vista principal)
-@app.route('/')
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    # Obtener eventos
-    upcoming_events = Event.query.filter(Event.is_sold_out == False).order_by(Event.date.asc()).all()
-    sold_out_events = Event.query.filter(Event.is_sold_out == True).order_by(Event.date.desc()).all()
-    return render_template('dashboard.html', upcoming_events=upcoming_events, sold_out_events=sold_out_events)
-
-# Crear un nuevo evento
 @app.route('/event/new', methods=['GET', 'POST'])
 @login_required
 def new_event():
     if request.method == 'POST':
-        name = request.form['name']
-        description = request.form['description']
-        total_tickets = int(request.form['total_tickets'])
-        # Considera agregar un campo para la fecha
-        
-        new_event = Event(name=name, description=description, total_tickets=total_tickets)
+        title = request.form.get('title')
+        description = request.form.get('description')
+        date_str = request.form.get('date')
+        location = request.form.get('location')
+
+        try:
+            event_date = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M')
+        except ValueError:
+            flash('Invalid date format. Please use YYYY-MM-DDTHH:MM.', 'danger')
+            return redirect(url_for('new_event'))
+
+        new_event = Event(title=title, description=description, date=event_date,
+                          location=location, creator=current_user)
         db.session.add(new_event)
         db.session.commit()
-        flash('Evento creado con éxito.', 'success')
-        return redirect(url_for('dashboard'))
-    return render_template('new_event.html')
+        flash('Event created successfully!', 'success')
+        return redirect(url_for('home'))
+    return render_template('create_event.html')
 
-# Vender una entrada
-@app.route('/event/<int:event_id>/sell', methods=['POST'])
+@app.route('/event/<int:event_id>')
 @login_required
-def sell_ticket(event_id):
+def event_detail(event_id):
     event = Event.query.get_or_404(event_id)
-    if event.sold_tickets < event.total_tickets:
-        event.sold_tickets += 1
-        if event.sold_tickets == event.total_tickets:
-            event.is_sold_out = True
-        db.session.commit()
-        flash(f'Entrada vendida para {event.name}.', 'success')
-    else:
-        flash(f'El evento {event.name} ya está agotado.', 'danger')
-    return redirect(url_for('dashboard'))
-
-# Devolver una entrada
-@app.route('/event/<int:event_id>/refund', methods=['POST'])
-@login_required
-def refund_ticket(event_id):
-    event = Event.query.get_or_404(event_id)
-    if event.sold_tickets > 0:
-        event.sold_tickets -= 1
-        event.is_sold_out = False # Si devuelves una, deja de estar agotado
-        db.session.commit()
-        flash(f'Entrada devuelta para {event.name}.', 'success')
-    else:
-        flash(f'No hay entradas vendidas para {event.name} para devolver.', 'danger')
-    return redirect(url_for('dashboard'))
-
-# Es necesario un usuario inicial para poder iniciar sesión. Puedes agregarlo manualmente a la base de datos o crear una ruta de registro temporal.
-# Ejemplo de creación de usuario en un script separado (no en la aplicación principal)
-# from app import app, db
-# from models import User
-# with app.app_context():
-#    user = User(username='admin')
-#    user.set_password('admin123')
-#    db.session.add(user)
-#    db.session.commit()
-#    print('Usuario admin creado.')
+    return render_template('event_detail.html', event=event)
