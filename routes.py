@@ -217,4 +217,3 @@ def return_ticket(event_id):
 
     flash(f"Se devolvieron {quantity} entradas de {event.title}.", "success")
     return redirect(url_for('view_event', event_id=event.id))
-
