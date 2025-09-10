@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ver Evento</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .event-card {
+      max-width: 800px;
+      margin: auto;
+    }
+    .event-info p {
+      margin-bottom: 0.4rem;
+    }
+    .actions .btn {
+      min-width: 100px;
+    }
+    .mini-card {
+      min-width: 180px;
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="{{ url_for('home') }}">MicroServicios</a>
+    <div class="collapse navbar-collapse justify-content-end">
+      <ul class="navbar-nav">
+        <li class="nav-item"><a class="nav-link text-danger" href="/logout">Cerrar sesión</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-5">
+
+  <!-- Tarjeta principal con detalles del evento -->
+  <div class="card p-4 shadow-sm event-card mb-4">
+    <h2 class="mb-3 text-center">{{ event.title }}</h2>
+
+    <div class="event-info">
+      <p><strong>Descripción:</strong> {{ event.description }}</p>
+      <div class="row">
+        <div class="col-md-6"><strong>Fecha:</strong> {{ event.date.strftime('%Y-%m-%d') }}</div>
+        <div class="col-md-6"><strong>Hora:</strong> {{ event.date.strftime('%H:%M') }}</div>
+      </div>
+      <div class="row">
+        <div class="col-md-6"><strong>Ubicación:</strong> {{ event.location }}</div>
+        <div class="col-md-6"><strong>Categoría:</strong> {{ event.category }}</div>
+      </div>
+      <div class="row">
+        <div class="col-md-6"><strong>Precio:</strong> ${{ event.price }}</div>
+        <div class="col-md-6"><strong>Cupos disponibles:</strong> {{ event.capacity }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formularios compactos de Venta y Devolución fuera del cuadro -->
+  <div class="d-flex justify-content-between flex-wrap gap-2 mb-4">
+    <!-- Venta -->
+    <div class="card mini-card p-3 shadow-sm text-center">
+      <h6 class="mb-2">Venta</h6>
+      <form action="{{ url_for('sell_ticket', event_id=event.id) }}" method="post" class="d-flex gap-1 justify-content-center">
+        <input type="number" name="quantity" min="1" max="{{ event.capacity }}" class="form-control form-control-sm" placeholder="Cantidad" required>
+        <button type="submit" class="btn btn-primary btn-sm">✔</button>
+      </form>
+    </div>
+
+    <!-- Devolución -->
+    <div class="card mini-card p-3 shadow-sm text-center">
+      <h6 class="mb-2">Devolución</h6>
+      <form action="{{ url_for('return_ticket', event_id=event.id) }}" method="post" class="d-flex gap-1 justify-content-center">
+        <input type="number" name="quantity" min="1" class="form-control form-control-sm" placeholder="Cantidad" required>
+        <button type="submit" class="btn btn-warning btn-sm">↩</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Acciones: Editar, Eliminar, Volver -->
+  <div class="d-flex justify-content-center gap-2 actions mb-5">
+    <a href="{{ url_for('edit_event', event_id=event.id) }}" class="btn btn-outline-warning">Editar</a>
+    <form method="POST" action="{{ url_for('delete_event', event_id=event.id) }}">
+      <button type="submit" class="btn btn-outline-danger">Eliminar</button>
+    </form>
+    <a href="{{ url_for('home') }}" class="btn btn-outline-secondary">Volver</a>
+  </div>
+</div>
+
+</body>
+</html>

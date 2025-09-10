@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Eventos Próximos</h2>
+
+    <form method="GET" action="{{ url_for('index') }}" class="filter-form">
+        <label for="category_filter">Filtrar por Categoría:</label>
+        <select name="category" id="category_filter">
+            <option value="all" {% if selected_category == 'all' %}selected{% endif %}>Todas</option>
+            {% for cat in categories %}
+                <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="search_input">Buscar:</label>
+        <input type="text" name="search" id="search_input" value="{{ search_term or '' }}" placeholder="Nombre o descripción">
+        
+        <button type="submit">Aplicar Filtro</button>
+        {% if selected_category or search_term %}
+            <a href="{{ url_for('index') }}" class="clear-filters">Limpiar Filtros</a>
+        {% endif %}
+    </form>
+
+
+    <div class="event-list">
+        {% for event in events %}
+            <div class="event-card {% if event.is_sold_out %}sold-out{% endif %}">
+                <h3><a href="{{ url_for('event_detail', event_id=event.id) }}">{{ event.name }}</a></h3>
+                <p><strong>Fecha:</strong> {{ event.date.strftime('%d/%m/%Y %H:%M') }}</p>
+                <p><strong>Categoría:</strong> {{ event.category }}</p>
+                <p><strong>Precio:</strong> €{{ event.price }}</p>
+                <p><strong>Cupos Disponibles:</strong> {{ event.available_slots }} / {{ event.total_slots }}</p>
+                {% if event.is_sold_out %}
+                    <p class="sold-out-tag">¡AGOTADO!</p>
+                {% endif %}
+                <a href="{{ url_for('event_detail', event_id=event.id) }}" class="button">Ver Detalles</a>
+            </div>
+        {% else %}
+            <p>No hay eventos registrados.</p>
+        {% endfor %}
+    </div>
+{% endblock %}
