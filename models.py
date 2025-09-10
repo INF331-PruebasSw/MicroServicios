@@ -33,3 +33,12 @@ class Event(db.Model):
     capacity = db.Column(db.Integer, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     creator = db.relationship('User', backref=db.backref('events', lazy=True))
+
+# -------------------- TRANSACTION --------------------
+class Transaction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
+    type = db.Column(db.String(10), nullable=False)  # 'venta' o 'devolucion'
+    quantity = db.Column(db.Integer, nullable=False)
+    date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    event = db.relationship('Event', backref=db.backref('transactions', lazy=True))

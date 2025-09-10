@@ -2,7 +2,7 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import app, db, login_manager
-from models import User, Event
+from models import User, Event, Transaction
 import datetime
 
 # -------------------- LOGIN MANAGER --------------------
@@ -21,10 +21,20 @@ def home():
     search = request.args.get('search')
     if search:
         query = query.filter(Event.title.ilike(f"%{search}%"))
-
     events = query.order_by(Event.date).all()
-    return render_template('home.html', events=events, search=search, category=category)
 
+    total_eventos = len(events)
+    total_cupos = sum(event.capacity for event in events)
+    eventos_agotados = [event for event in events if event.capacity == 0]
+    return render_template(
+        'home.html',
+        events=events,
+        search=search,
+        category=category,
+        total_eventos=total_eventos,
+        total_cupos=total_cupos,
+        eventos_agotados=eventos_agotados
+    )
 
 # -------------------- LOGIN --------------------
 @app.route('/login', methods=['GET', 'POST'])
@@ -131,20 +141,15 @@ def view_event(event_id):
 @login_required
 def edit_event(event_id):
     event = Event.query.get_or_404(event_id)
-
-    # Verificar permisos
     if event.creator != current_user:
         flash('No tienes permisos para editar este evento.', 'danger')
-        return redirect(url_for('events_list'))
+        return redirect(url_for('home'))
 
     if request.method == 'POST':
-        # Asignar valores del formulario
         event.title = request.form.get('title', event.title)
         event.description = request.form.get('description', event.description)
         event.location = request.form.get('location', event.location)
         event.category = request.form.get('category', event.category)
-
-        # Validar precio y capacidad
         price_str = request.form.get('price')
         capacity_str = request.form.get('capacity')
         try:
@@ -154,7 +159,6 @@ def edit_event(event_id):
             flash('Precio o capacidad inválidos.', 'danger')
             return redirect(url_for('edit_event', event_id=event.id))
 
-        # Validar fecha y hora (datetime-local -> "YYYY-MM-DDTHH:MM")
         datetime_str = request.form.get('date')
         try:
             event.date = datetime.datetime.strptime(datetime_str, '%Y-%m-%dT%H:%M')
@@ -186,3 +190,37 @@ def delete_event(event_id):
     db.session.commit()
     flash('Evento eliminado exitosamente!', 'success')
     return redirect(url_for('home'))
+
+# -------------------- VENDER TICKET --------------------
+@app.route('/event/<int:event_id>/sell', methods=['POST'])
+@login_required
+def sell_ticket(event_id):
+    event = Event.query.get_or_404(event_id)
+    quantity = int(request.form.get('quantity', 0))
+    if quantity <= 0 or quantity > event.capacity:
+        flash("Cantidad inválida.", "danger")
+        return redirect(url_for('view_event', event_id=event.id))
+    transaction = Transaction(event_id=event.id, type='venta', quantity=quantity)
+    db.session.add(transaction)
+    event.capacity -= quantity
+    db.session.commit()
+    flash(f"Se vendieron {quantity} entradas para {event.title}.", "success")
+    return redirect(url_for('view_event', event_id=event.id))
+
+# -------------------- DEVOLVER TICKET --------------------
+@app.route('/event/<int:event_id>/return', methods=['POST'])
+@login_required
+def return_ticket(event_id):
+    event = Event.query.get_or_404(event_id)
+    quantity = int(request.form.get('quantity', 0))
+    if quantity <= 0:
+        flash("Cantidad inválida.", "danger")
+        return redirect(url_for('view_event', event_id=event.id))
+    transaction = Transaction(event_id=event.id, type='devolucion', quantity=quantity)
+    db.session.add(transaction)
+    event.capacity += quantity
+    db.session.commit()
+
+    flash(f"Se devolvieron {quantity} entradas de {event.title}.", "success")
+    return redirect(url_for('view_event', event_id=event.id))
+
