@@ -141,9 +141,6 @@ def view_event(event_id):
 @login_required
 def edit_event(event_id):
     event = Event.query.get_or_404(event_id)
-    if event.creator != current_user:
-        flash('No tienes permisos para editar este evento.', 'danger')
-        return redirect(url_for('home'))
 
     if request.method == 'POST':
         event.title = request.form.get('title', event.title)
@@ -183,9 +180,6 @@ def edit_event(event_id):
 @login_required
 def delete_event(event_id):
     event = Event.query.get_or_404(event_id)
-    if event.creator != current_user:
-        flash('No tienes permisos para eliminar este evento.', 'danger')
-        return redirect(url_for('home'))
     db.session.delete(event)
     db.session.commit()
     flash('Evento eliminado exitosamente!', 'success')
