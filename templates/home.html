@@ -62,8 +62,24 @@
     </div>
   </div>  
 
+  <!-- Próximo evento -->
+  {% if proximo_evento %}
+  <div class="card-custom mt-3">
+    <h4>Próximo Evento</h4>
+    <div>
+      <h5>{{ proximo_evento.title }}</h5>
+      <p>{{ proximo_evento.description }}</p>
+      <p><strong>Fecha:</strong> {{ proximo_evento.date.strftime('%Y-%m-%d') }} 
+         <strong>Hora:</strong> {{ proximo_evento.date.strftime('%H:%M') }}</p>
+      <p><strong>Ubicación:</strong> {{ proximo_evento.location }}</p>
+      <p><strong>Precio:</strong> ${{ proximo_evento.price }}</p>
+      <a href="{{ url_for('view_event', event_id=proximo_evento.id) }}" class="btn btn-primary btn-sm">Ver Evento</a>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Filtrado y Lista de eventos -->
-  <div class="card-custom">
+  <div class="card-custom mt-3">
     <h4 class="mb-3">Eventos</h4>
 
     <!-- Formulario de búsqueda y filtro -->

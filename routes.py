@@ -11,6 +11,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # -------------------- HOME --------------------
+
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def home():
@@ -21,11 +22,16 @@ def home():
     search = request.args.get('search')
     if search:
         query = query.filter(Event.title.ilike(f"%{search}%"))
+    
     events = query.order_by(Event.date).all()
+    hoy = datetime.datetime.now() 
+    proximos = [event for event in events if event.date >= hoy]
+    proximo_evento = proximos[0] if proximos else None
 
     total_eventos = len(events)
     total_cupos = sum(event.capacity for event in events)
     eventos_agotados = [event for event in events if event.capacity == 0]
+
     return render_template(
         'home.html',
         events=events,
@@ -33,7 +39,8 @@ def home():
         category=category,
         total_eventos=total_eventos,
         total_cupos=total_cupos,
-        eventos_agotados=eventos_agotados
+        eventos_agotados=eventos_agotados,
+        proximo_evento=proximo_evento  # <--- nuevo
     )
 
 # -------------------- LOGIN --------------------
